@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de prix de nuitée JA </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .banner {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .banner img {
+            max-width: 100%;
+            height: auto;
+        }
+        .explication {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .question {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .question label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .question input[type="radio"] {
+            margin-right: 10px;
+        }
+        .question input[type="number"] {
+            padding: 5px;
+            width: 60px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #resultat {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        <img src="https://collectif-fromental.org/design/acces.png" alt="Bannière" id="banner-image">
+    </div>
+    <h1>Calculateur de prix de nuitée JA</h1>
+    <div class="explication">
+        <p>Cette page s'adresse aux JA (jeunes adultes) c'est-à-dire les personnes majeures encore rattachées à un foyer fiscal tiers. Elle permet de calculer le prix de la nuitée à Fromental en fonction de la situation de chaque JA. Pour la remplir, considérez un mois type représentatif de votre situation actuelle.</p>
+    </div>
+
+    <form id="formulaire">
+        <!-- Questions Oui/Non -->
+        <div class="question" data-valeur="1.5">
+            <label>1. Loyer et charges</label>
+            <p class="description">Je paye le loyer de mon lieu de résidence actuel.</p>
+            <label><input type="radio" name="q1" value="non"> Oui</label>
+            <label><input type="radio" name="q1" value="oui"> Non</label>
+        </div>
+        <div class="question" data-valeur="1.5">
+            <label>2. Remboursement d'un prêt</label>
+            <p class="description">J'ai un prêt en cours pour lequel je verse des mensualités.</p>
+            <label><input type="radio" name="q2" value="non"> Oui</label>
+            <label><input type="radio" name="q2" value="oui"> Non</label>
+        </div>
+        <div class="question" data-valeur="1">
+            <label>3. Nourriture</label>
+            <p class="description">Je paye mes repas (au moins un repas sur deux).</p>
+            <label><input type="radio" name="q3" value="non"> Oui</label>
+            <label><input type="radio" name="q3" value="oui"> Non</label>
+        </div>
+        <div class="question" data-valeur="0.5">
+            <label>4. Transports et santé</label>
+            <p class="description">Je prends en charge la majorité de mes frais qui relève des transports ou de la santé.</p>
+            <label><input type="radio" name="q4" value="non"> Oui</label>
+            <label><input type="radio" name="q4" value="oui"> Non</label>
+        </div>
+        <div class="question" data-valeur="0.5">
+            <label>5. Frais de scolarité</label>
+            <p class="description">Mes études actuelles me demande des frais importants (en inscription et/ou en matériel requis).</p>
+            <label><input type="radio" name="q5" value="non"> Oui</label>
+            <label><input type="radio" name="q5" value="oui"> Non</label>
+        </div>
+        <div class="question" data-valeur="0.2">
+            <label>6. Abonnements</label>
+            <p class="description">Je payes la majorité de mes frais d'abonnement hors transports (streaming de musique et/ou vidéo, forfait mobile, salle de sport etc ...).</p>
+            <label><input type="radio" name="q6" value="non"> Oui</label>
+            <label><input type="radio" name="q6" value="oui"> Non</label>
+        </div>
+
+        <!-- Question numérique -->
+        <div class="question">
+            <label for="q7">7. reste à vivre mensuel (en euros) :</label>
+            <p class="description">Le "reste à vivre" correspond à la somme d'argent non dépnsée ou dépensée pour des loisirs à la fin du mois. Il correspond à l'argent disponible dans un mois pour des vacances, aller au cinéma ou épargner.</p>
+            <input type="number" id="q7" name="q7" min="0">
+        </div>
+
+        <button type="button" id="calculer" disabled>Calculer le prix de ma nuitée</button>
+    </form>
+
+    <div id="resultat"></div>
+
+    <script>
+        // Valeurs par défaut (à personnaliser)
+        const VALEUR_BASE = 5; // Valeur de base
+        const COEFFICIENT = 0.005;    // Coefficient pour la question 7
+
+        // Vérifie si toutes les questions sont remplies
+        function verifierFormulaire() {
+            let toutesRemplies = true;
+            // Vérifie les questions radio
+            for (let i = 1; i <= 6; i++) {
+                if (!document.querySelector(`input[name="q${i}"]:checked`)) {
+                    toutesRemplies = false;
+                    break;
+                }
+            }
+
+            // Vérifie la question numérique
+            const q7 = document.getElementById('q7').value;
+            toutesRemplies = toutesRemplies && q7 !== "" && !isNaN(q7);
+
+            document.getElementById('calculer').disabled = !toutesRemplies;
+    
+        }
+
+        
+
+        // Écouteurs d'événements pour vérifier le formulaire
+        document.querySelectorAll('input[type="radio"]').forEach(input => {
+            input.addEventListener('change', verifierFormulaire);
+        });
+        document.getElementById('q7').addEventListener('input', verifierFormulaire);
+
+        // Calcul du résultat
+        document.getElementById('calculer').addEventListener('click', function() {
+            let resultat = VALEUR_BASE;
+
+            // Soustraire les valeurs des questions "oui"
+            document.querySelectorAll('.question[data-valeur]').forEach(question => {
+                const nom = question.querySelector('input[type="radio"]').name;
+                const reponse = document.querySelector(`input[name="${nom}"]:checked`).value;
+                if (reponse === "oui") {
+                    const valeur = parseFloat(question.getAttribute('data-valeur'));
+                    resultat -= valeur;
+                }
+            });
+
+            // Ajouter la valeur de la question 7
+            const q7 = parseFloat(document.getElementById('q7').value);
+            resultat += q7 * COEFFICIENT;
+
+            // Arrondir à l'entier ou demi-entier le plus proche
+            resultat = Math.round(resultat * 2) / 2;
+
+            // Seuil minimal de 1 euro
+            if (resultat < 1) {
+             resultat = 1;
+            }
+
+
+            // Afficher le résultat
+            document.getElementById('resultat').innerHTML = `
+                <h2>Votre résultat : ${resultat} €</h2>
+            `;
+            document.getElementById('resultat').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
