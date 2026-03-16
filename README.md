@@ -1,1 +1,1 @@
-calculateur prixx nuitée
+calculateur prix nuitée
